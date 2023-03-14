@@ -29,3 +29,16 @@ void reset_timer(StateMachine* sm) {
     sm->timer.start_time = millis();
     sm->timer.active = true;
 }
+
+case A_Parar :
+    // Check if the timer has expired
+    if (sm->timer.active && (millis() - sm->timer.start_time) >= sm->timer.timeout) {
+        // Timer has expired, transition to Tapete state
+        sm->timer.active = false;
+        currentState = Tapete;
+    }
+    else {
+        // Continue waiting in A_Parar state
+        // ...
+    }
+    break;
