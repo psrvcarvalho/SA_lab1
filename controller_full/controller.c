@@ -5,35 +5,55 @@
 
 #undef DEBUG
 
-// Tipos de dados
-
-// Estados da máquina
+// "Operação" state machine
 typedef enum{
 	Parado,
 	Operar,
 	A_Parar,
 	Tapete,
-} stateNames;
+} stateNames1;
 
+// "Wait" state machine
+typedef enum{
+	LOFF,
+	LON,
+} stateNames2;
+
+// "Contador" state machine
+typedef enum{
+	INIT,
+	GREE,
+	BLUE,
+} stateNames3;
+
+// "Tapetes" state machine
+typedef enum{
+	// TBD
+} stateNames4;
+
+/*
 // Timers
 typedef struct {
     uint32_t start_time,
     uint32_t timeout,
     bool active,
 } Timer;
-
+*/
 
 
 
 // Funções
-void initME();
+void init_SM();
 
-// Estado atual da máquina
-stateNames currentState = Parado;
+// State machines current state
+stateNames1 currentState1 = Parado;
+stateNames2 currentState2 = LOFF;
+stateNames3 currentState3 = INIT;
+stateNames4 currentState4 = //TBD
 
-// Tempo de ciclo
+// cycle time
 uint64_t  scan_time = 1000;	// 1sec
-uint64_t  stoptime = 10000; // 10sec
+/* uint64_t  stoptime = 10000; // 10sec */
 
 // Falling edges
 bool fe_START = False, fe_STOP = False, fe_ST2 = False, fe_ST3 = False;
@@ -42,9 +62,9 @@ bool fe_START = False, fe_STOP = False, fe_ST2 = False, fe_ST3 = False;
 bool p_START = 0,  p_STOP = 0, p_ST2 = 0, p_ST3 = 0;
 
 void edges(){
-	//Detects edges
+	// Detects edges
 
-	//FALLING EDGES
+	// FALLING EDGES
 	if(p_START == true && START = False)	
 		fe_START = true;
 	else fe_START = False;
@@ -61,7 +81,7 @@ void edges(){
 		fe_ST3 = true;
 	else fe_ST3 = False;
 
-	//updates values
+	// updates values
 	p_START = START;
 	p_STOP = STOP;
 	p_ST2 = ST2;
@@ -70,14 +90,14 @@ void edges(){
 }
 
 void operação(){
-	//sm controls operação
-	switch (currentState) {
+	// sm controls operação
+	switch (currentState1) {
 			case Parado :
 					
 				// Transition Parado -> Operar
 				if (fe_START == 1)
 					// Next State
-					currentState = Operar;
+					currentState1= Operar;
 			
 				break;
 			
@@ -86,31 +106,32 @@ void operação(){
 				// Transition Operar -> A_Parar
 				if (fe_STOP == 1)
 					// Next State
-					currentState = A_Parar;
+					currentState1= A_Parar;
 	
 				break;
 
 			case A_Parar :
 				
+				/*
 				// Initialize the timer to 10 seconds
     			sm->timer.start_time = millis();
     			sm->timer.timeout = 10000;
     			sm->timer.active = true;
-
+				*/
 
 				// Transition A_Parar -> Tapete
-				if (LOW == 0)
+				if ((timer1.time >= 10000) && (SV1 == 0 || SV2 == 0))
 					// Next State
-					currentState = A_Parar;
+					currentState1= Tapete;
 					
 				break;
 
 			case Tapete :
 				
 				// Transition Tapete -> Parado
-				if (LOW == 0)
+				if (timer1.time >= 15000)
 					// Next State
-					currentState = A_Parar;
+					currentState1= Parado;
 					
 				break;
 	} //end case
@@ -118,7 +139,22 @@ void operação(){
 }
 
 void wait(){
-	//sm controls wait
+	// sm controls wait
+	switch (currentState2) {
+			case LOFF :
+				// Transition LOFF -> LON
+				if ((currentState1 == A_Parar) && timer2.time >= 2000)
+					currentState2 == LON;
+
+				break
+
+			case LON :
+				// Transition LON -> LOFF
+				currentState2 == LOFF;
+
+			break
+
+
 }
 
 void contador(){
@@ -129,10 +165,10 @@ void tapetes(){
 	// sm controls tapetes
 }
 
-// Inicializa a ME
-void init_ME()
+// Initializes state machine
+void init_SM()
 {
-	//LSTOP = 1;
+	printf("\n *** Initializing ***")
 }
 
 // Código principal
@@ -140,7 +176,7 @@ int main() {
 
 	
 	// Inicialização da ME
-	init_ME();
+	init_SM();
 	
 	// Ciclo de execução
 	while(1) {
@@ -148,6 +184,11 @@ int main() {
 		#ifdef DEBUG
 		printf ("\n*** Inicio do Ciclo ***\n");
 		#endif
+
+		//timer1
+		start_timer(&timer1);
+		stop_timer(&timer1);
+
 
 		// State machines
 		operação();
@@ -164,31 +205,21 @@ int main() {
 		// Updates timers
 		update_timers();
 
-		// Transição entre estados
-		
-		
-		
-
 		// Atualiza saídas
 
 		// Saídas booleanas
-		LSTOP = (currentState == Parado);
-		LSTART = (currentState == Operar);
-		E1 = (currentState == Operar);
-		E2 = (currentState == Operar);
-		T2A = (currentState == Tapete);
-		T3A = (currentState == Tapete);
+		LSTOP = (currentState1 == Parado);
+		LSTART = (currentState1 == Operar);
+		E1 = (currentState1 == Operar);
+		E2 = (currentState1 == Operar);
+		T2A = (currentState1 == Tapete);
+		T3A = (currentState1 == Tapete);
+		LWAIT = (currentState2 == LON);
 		
 		//Escrita nas saídas
 		write_outputs();
 
-		//timer1
-		start_timer(&timer1);
-
-		if(timer1.time >= 10000)
-
-		stop_timer(&timer1);
-
+		
 		//Aguarda pelo próximo ciclo
 		sleep_abs(scan_time);
 		
