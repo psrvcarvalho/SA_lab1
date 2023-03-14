@@ -1,0 +1,31 @@
+typedef struct {
+    uint32_t start_time;
+    uint32_t timeout;
+    bool active;
+} Timer;
+
+void enter_state(StateMachine* sm) {
+    // Initialize the timer to 10 seconds
+    sm->timer.start_time = millis();
+    sm->timer.timeout = 10000;
+    sm->timer.active = true;
+
+    // Other state initialization code...
+}
+
+void state_loop(StateMachine* sm) {
+    // Check the timer
+    if (sm->timer.active && (millis() - sm->timer.start_time) >= sm->timer.timeout) {
+        // Timer has expired, transition to a new state
+        sm->timer.active = false;
+        transition_to_new_state(sm);
+        return;
+    }
+
+    // Other state loop code...
+}
+
+void reset_timer(StateMachine* sm) {
+    sm->timer.start_time = millis();
+    sm->timer.active = true;
+}
