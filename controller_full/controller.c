@@ -105,6 +105,13 @@ stateNames3 currentState3 = INIT;
 stateNames4 currentState4 = START1;
 stateNames5 currentState5 = START2;
 
+// State machines next state
+stateNames1 nextState1;
+stateNames2 nextState2;
+stateNames3 nextState3;
+stateNames4 nextState4;
+stateNames5 nextState5;
+
 // Falling edges
 bool fe_START = false, fe_STOP = false, fe_ST2 = false, fe_ST3 = false, fe_STR1 = false, fe_STR2 = false;
 
@@ -425,6 +432,13 @@ int main() {
 
 		// Edge detection
 		edges();
+
+// State update
+                currentState1 = nextState1;
+currentState2 = nextState2;
+currentState3 = nextState3;
+currentState4 = nextState4;
+currentState5 = nextState5;
 
 		LSTOP = (currentState1 == Parado);
 		LSTART = (currentState1 == Operar);
