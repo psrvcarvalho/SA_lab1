@@ -61,7 +61,7 @@ typedef struct {
 uint64_t  start_time = 0, end_time = 0, cycle_time = 0;
 /* uint64_t  stoptime = 10000; // 10sec */
 
-Timer timetap, timeout, timewait;
+Timer timetap, timeout, timewait, timeed;
 
 void update_timers(){
 
@@ -73,15 +73,31 @@ void update_timers(){
 		cycle_time = end_time - start_time;
 
 	start_time = end_time;
+	//printf("%lu", get_time());
+	//printf("\nstarttime: %lu\ncycletime: %lu\nend_time: %lu\n", start_time, end_time, cycle_time);		
 
-	if (timetap.on)
-		timetap.time = timetap.time + cycle_time;		
+	if (timetap.on){
 
-	if (timeout.on)
+		timetap.time = timetap.time + cycle_time;
+		//printf("timetap:%d***%lu***\n", timetap.on, timetap.time);
+	}
+
+	if (timeout.on){
+
 		timeout.time = timeout.time + cycle_time;
+		//printf("timeout:%d***%lu***\n", timeout.on, timeout.time);
+	}
 	
-	if (timewait.on)
+	if (timewait.on){
+
 		timewait.time = timewait.time + cycle_time;
+		//printf("timewait:%d***%lu***\n", timewait.on, timewait.time);
+	}
+
+	if (timeed.on){
+
+		timeed.time = timeed.time + cycle_time;
+	}
 	
 }
 
@@ -95,15 +111,11 @@ void stop_timer(Timer* t){
 	t->time = 0;
 }
 
-// Funções
-void init_SM();
-
-// State machines current state
-stateNames1 currentState1 = Parado;
-stateNames2 currentState2 = LOFF;
-stateNames3 currentState3 = INIT;
-stateNames4 currentState4 = START1;
-stateNames5 currentState5 = START2;
+stateNames1 currentState1;
+stateNames2 currentState2;
+stateNames3 currentState3;
+stateNames4 currentState4;
+stateNames5 currentState5;
 
 // State machines next state
 stateNames1 nextState1;
@@ -112,39 +124,57 @@ stateNames3 nextState3;
 stateNames4 nextState4;
 stateNames5 nextState5;
 
+// Funções
+//void init_SM();
+// Initializes state machine
+void init_SM()
+{
+	printf("\n *** Initializing ***");
+	// State machines current state
+	currentState1 = Parado;
+	currentState2 = LOFF;
+	currentState3 = INIT;
+	currentState4 = START1;
+	currentState5 = START2;
+
+}
+
+
 // Falling edges
-bool fe_START = false, fe_STOP = false, fe_ST2 = false, fe_ST3 = false, fe_STR1 = false, fe_STR2 = false;
+bool fe_START = 0, fe_STOP = 0, fe_ST2 = 0, fe_ST3 = 0, fe_STR1 = 0, fe_STR2 = 0;
 
 // Previous values
 bool p_START = 0,  p_STOP = 0, p_ST2 = 0, p_ST3 = 0, p_STR1 = 0, p_STR2 = 0;
+// Previous values will identify if pieces are still between sensors
+int p_SV1 = 0, p_SV2 = 0;
 
 void edges(){
 	// Detects edges
 
 	// FALLING EDGES
-	if(p_START == true && START == false)	
-		fe_START = true;
-	else fe_START = false;
+	if(p_START == 1 && START == 0)	
+		fe_START = 1;
+	else fe_START = 0;
 
-	if(p_STOP == true && STOP == false)	
-		fe_STOP = true;
-	else fe_STOP = false;
+	if(p_STOP == 1 && STOP == 0)	
+		fe_STOP = 1;
+	else fe_STOP = 0;
 
-	if(p_ST2 == true && ST2 == false)	
-		fe_ST2 = true;
-	else fe_ST2 = false;
+	if(p_ST2 == 1 && ST2 == 0)	
+		fe_ST2 = 1;
+	else fe_ST2 = 0;
 
-	if(p_ST3 == true && ST3 == false)	
-		fe_ST3 = true;
-	else fe_ST3 = false;
+	if(p_ST3 == 1 && ST3 == 0)	
+		fe_ST3 = 1;
+	else fe_ST3 = 0;
 
-	if(p_STR1 == true && STR1 == false)	
-		fe_STR1 = true;
-	else fe_STR1 = false;
+	if(p_STR1 == 1 && STR1 == 0)	
+		fe_STR1 = 1;
+	else fe_STR1 = 0;
 
-	if(p_STR2 == true && STR2 == false)	
-		fe_STR2 = true;
-	else fe_STR2 = false;
+	if(p_STR2 == 1 && STR2 == 0)	
+		fe_STR2 = 1;
+	else fe_STR2 = 0;
 
 	// updates values
 	p_START = START;
@@ -160,20 +190,23 @@ void operacao(){
 	// sm controls operacao
 	switch (currentState1) {
 			case Parado :
-					
 				// Transition Parado -> Operar
-				if (fe_START == 1)
+				if (fe_START == 1){
 					// Next State
-					currentState1 = Operar;
+					nextState1 = Operar;
+					AZUIS = 0;
+					VERDES = 0;
+				}
 			
 			break;
 			
 			case Operar :
 				
 				// Transition Operar -> A_Parar
-				if (fe_STOP == 1)
+				if (fe_STOP == 1){
 					// Next State
-					currentState1 = A_Parar;
+					nextState1 = A_Parar;
+				}
 	
 			break;
 
@@ -181,22 +214,33 @@ void operacao(){
 				
 				// Transition A_Parar -> Tapete
 				if (SV1 == 0 && SV2 == 0){
-					start_timer(&timetap);
+					if (timetap.on == 0){
+						start_timer(&timetap);
+					}
+					if (timewait.on == 0){
+						start_timer(&timewait);
+					}
 					if (timetap.time >= 10000){
 						// Next State
-						currentState1 = Tapete;
+						nextState1 = Tapete;
+						stop_timer(&timetap);
+						stop_timer(&timewait);
 					}
 						
 				}
+				
 			break;
 
 			case Tapete :
-				stop_timer(&timetap);
-				start_timer(&timeout);
+				if(timeout.on == 0){
+					start_timer(&timeout);
+				}
 				// Transition Tapete -> Parado
-				if (timeout.time >= 15000)
+				if (timeout.time >= 15000){
 					// Next State
-					currentState1 = Parado;
+					nextState1 = Parado;
+					stop_timer(&timeout);
+				}
 					
 			break;
 	} //end case
@@ -207,16 +251,22 @@ void wait(){
 	// sm controls wait
 	switch (currentState2) {
 			case LOFF :
-				start_timer(&timewait);
 				// Transition LOFF -> LON
-				if ((currentState1 == A_Parar) && timewait.time >= 2000)
-					currentState2 = LON;
+				if (currentState1 == A_Parar && timewait.time >= 2000){
+						nextState2 = LON;
+						start_timer(&timeed);
+				}
 
 			break;
 
 			case LON :
 				// Transition LON -> LOFF
-				currentState2 = LOFF;
+				if(timeed.time >= 2000){
+					nextState2 = LOFF;
+					stop_timer(&timeed);
+					start_timer(&timewait);
+				}
+
 
 		break;
 	}
@@ -230,33 +280,21 @@ void contador(){
 		case INIT :
 			//Transistion INIT -> GREEN or INIT -> BLUE
 			if (fe_ST3 == true)
-				currentState3 = GREEN;
+				nextState3 = GREEN;
 			
 			else if (fe_ST2 == true)
-				currentState3 = BLUE;
+				nextState3 = BLUE;
 			
 		break;
 
-			AZUIS = 0;
-			VERDES = 0;
-
 		case GREEN :
-			//Transition GREEN -> INIT or counts GREEN
-			if (fe_ST3 == true)
-				VERDES++;
-
-			else if ((fe_START == 1) && currentState1 == Parado)
-				currentState3 = INIT;
-
+			VERDES++;
+			nextState3 = INIT;
 		break;
 
 		case BLUE : 
-			//Transition BLUE -> or counts BLUE
-			if (fe_ST2 == true)
-				AZUIS++;
-
-			else if ((fe_START == 1) && currentState1 == Parado)
-				currentState3 = INIT;
+			AZUIS++;
+			nextState3 = INIT;
 
 		break;
 	}
@@ -269,61 +307,81 @@ void Tapetes_1(){
 	switch(currentState4) {
 		case START1 : 
 			if (currentState1 == Operar)
-				currentState4 = OP1;
+				nextState4 = OP1;
 
 		break;
 		
 		case OP1 :
 			if (SV1 != 0)
-				currentState4 = VALID1;
+				nextState4 = VALID1;
 			
 			else if (currentState1 == Tapete)
-				currentState4 = START1;
+				nextState4 = START1;
 
 		break;
 		
 		case VALID1 :
-			if (SV1 == 1 && SV2 != 1)
-				currentState4 = BLUE1;
+			if(SV1 != 0)
+				p_SV1 = SV1;
+			if ((p_SV1 == 1 && p_SV2 != 1) && (SPR1 == 1 && SPR2 == 1))
+				nextState4 = BLUE1;
 
-			else if (SV1 == 4)
-				currentState4 = GREEN1;
+			else if (p_SV1 == 4 && (SPR1 == 1 && SPR2 == 1))
+				nextState4 = GREEN1;
 
 		break;
 		
+		/*
+		00	t1	t4
+		01	t4	t2	pe2
+		04	t4	t3
+		10	t1	t2
+		11	t4	t2 	pe2
+		14	ttodos
+		40	t1	t3	pr1
+		41	t1	t3	pr1
+		44	t1	t3	pr1
+		*/
+
 		case BLUE1 :
 			if (fe_STR1 == 1)
-				currentState4 = PROC1;
+				nextState4 = PROC1;
 
 		break;
 		
 		case PROC1 :
-			if (fe_ST2 == 1)
-				currentState4 = START1;
+			if (fe_ST2 == 1){
+
+				p_SV1 = 0;
+				nextState4 = START1;
+			}
 
 		break;
 
 		case GREEN1 :
 			if (fe_STR1 == 1)
-				currentState4 = STRET1;
+				nextState4 = STRET1;
 				
 		break;
 			
 		case STRET1 :
 			if (SPE1 == 1)
-				currentState4 = RETR1;
+				nextState4 = RETR1;
 
 		break;
 			
 		case RETR1 :
 			if (SPR1 == 1)
-				currentState4 = FIN1;
+				nextState4 = FIN1;
 
 		break;
 		
 		case FIN1 :
-			if (fe_ST3 == 1)
-				currentState4 = START1;
+			if (fe_ST3 == 1){
+
+				p_SV1 = 0;
+				nextState4 = START1;
+			}
 
 		break;
 			
@@ -335,77 +393,82 @@ void Tapetes_2(){
 	switch(currentState5) {
 		case START2 : 
 			if (currentState1 == Operar)
-				currentState5 = OP2;
+				nextState5 = OP2;
 
 		break;
 		
 		case OP2 :
 			if (SV2 != 0)
-				currentState5 = VALID2;
+				nextState5 = VALID2;
 				
 			else if (currentState1 == Tapete)
-				currentState5 = START2;
+				nextState5 = START2;
 
 		break;
 		
 		case VALID2 :
-			if (SV2 == 4 && SV1 != 4)
-				currentState5 = GREEN2;
+			if(SV2 != 0)
+				p_SV2 = SV2;
 
-			else if (SV1 != 4 && SV2 == 1)
-				currentState5 = BLUE2;
+			if (p_SV2 == 4 && p_SV1 != 4 && (SPR1 == 1 && SPR2 == 1))
+				nextState5 = GREEN2;
+
+			else if (p_SV1 != 4 && p_SV2 == 1 && (SPR1 == 1 && SPR2 == 1))
+				nextState5 = BLUE2;
 
 		break;
 		
 		case GREEN2 :
 			if (fe_STR2 == 1)
-				currentState5 = PROC2;
+				nextState5 = PROC2;
 
 		break;
 		
 		case PROC2 :
-			if (fe_ST3 == 1)
-				currentState5 = START2;
+			if (fe_ST3 == 1){
+
+				p_SV2 = 0;
+				nextState5 = START2;
+			}
 
 		break;
 
 		case BLUE2 :
 			if (fe_STR2 == 1)
-				currentState5 = STRET2;
+				nextState5 = STRET2;
 				
 		break;
 			
 		case STRET2 :
 			if (SPE2 == 1)
-				currentState5 = RETR2;
+				nextState5 = RETR2;
 
 		break;
 			
 		case RETR2 :
 			if (SPR2 == 1)
-				currentState5 = FIN2;
+				nextState5 = FIN2;
 
 		break;
 		
 		case FIN2 :
-			if (fe_ST2 == 1)
-				currentState5 = START2;
+			if (fe_ST2 == 1){
+
+				p_SV2 = 0;
+				nextState5 = START2;
+			}
 
 		break;
 				
 	}
 }
 
-// Initializes state machine
-void init_SM()
-{
-	printf("\n *** Initializing ***");
-}
+
 
 
 // Código principal
 int main() {
-	
+
 	// Inicialização da ME
 	init_SM();
 	
@@ -419,6 +482,11 @@ int main() {
 		printf ("\n*** Inicio do Ciclo ***\n");
 		#endif
 	
+		// Leitura das entradas
+		read_inputs();
+
+		// Edge detection
+		edges();
 
 		// State machines
 		operacao();
@@ -427,18 +495,12 @@ int main() {
 		Tapetes_1();
 		Tapetes_2();
 
-		// Leitura das entradas
-		read_inputs();
-
-		// Edge detection
-		edges();
-
-// State update
-                currentState1 = nextState1;
-currentState2 = nextState2;
-currentState3 = nextState3;
-currentState4 = nextState4;
-currentState5 = nextState5;
+		// State update
+        currentState1 = nextState1;
+		currentState2 = nextState2;
+		currentState3 = nextState3;
+		currentState4 = nextState4;
+		currentState5 = nextState5;
 
 		LSTOP = (currentState1 == Parado);
 		LSTART = (currentState1 == Operar);
